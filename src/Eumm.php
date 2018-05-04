@@ -33,32 +33,23 @@ class Eumm
 
     }
 
+    /**
+     * Get Balance for the account
+     * @return mixed
+     * @throws \Exception
+     */
     public function getAccountBalance()
     {
-       $response= $this->client->post('getAccountBalance', ['form_params' =>
-                                                                        ['id' => $this->id,
-                                                                        'pwd' => $this->pwd,
-                                                                        'hash' => md5($this->id.$this->pwd.$this->key)]
-                                                                        ]);
-      if(is_null($response)){
-          throw new \Exception("TimeOut Exception", 400);
-      }elseif($response->getStatusCode() === 200){
-          $data =\GuzzleHttp\json_decode($response->getBody()->getContents()) ;
-          if($data->statut == 101){
-              throw new \Exception("Internal server error/unknown result", 101);
-          }elseif ($data->statut == 401){
-              throw new \Exception("Authentication parameters not set", 401);
-          }elseif ($data->statut == 402){
-              throw new \Exception("This client is not yet allowed to use this service", 402);
-          }elseif ($data->statut == 403){
-              throw new \Exception("Required inputs not set / invalid request", 403);
-          }elseif ($data->statut == 404){
-              throw new \Exception("Service API not set", 404);
-          }elseif ($data->statut == 405){
-              throw new \Exception("Transaction Failed", 405);
-          }elseif ($data->statut == 406){
-              throw new \Exception("Unknown service", 406);
-          }elseif ($data->statut == 100){
+       $response= $this->getResponse("getAccountBalance",
+                [
+                    'hash' => md5($this->id.$this->pwd.$this->key)
+                ]
+           );
+       $this->VerifyIfResponseIsNot($response);
+        if($response->getStatusCode() === 200){
+          $data = $this->decodeResponse($response);
+          $this->returnError($data);
+           if ($data->statut == 100){
                 $this->statut = $data->statut;
                 $this->message = $data->message;
                 $this->balance = $data->balance;
@@ -71,6 +62,42 @@ class Eumm
       return $this->balance;
     }
 
+    /**
+     * Get Account Details
+     * @param string $phone (237 XXXXXXXXX) E.169 format number
+     * @return Account
+     * @throws \Exception
+     */
+    public function getAccountDetails($phone)
+    {
+        $response = $this->getResponse("getAccountDetails", [
+            'account' => $phone,
+            'hash' => md5($this->id.$this->pwd.$phone.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            $this->returnError($data);
+            if($data->statut == 100){
+                return new Account($data->phone, $data->accountName, $data->accountStatus, $data->accountPlan);
+            }
+
+        }else{
+            throw new \Exception("Error",500);
+        }
+
+
+    }
+
+    private function getResponse($pathUrl, $data)
+    {
+        $authData = [
+            'id' => $this->id,
+            'pwd' => $this->pwd,
+        ];
+        return $this->client->post($pathUrl, ['form_params' => array_merge($authData, $data)]);
+    }
 
     /**
      * @return mixed
@@ -102,6 +129,38 @@ class Eumm
     public function getBalance()
     {
         return $this->balance;
+    }
+
+    /**
+     * @param $statut
+     * @throws \Exception
+     */
+    private function returnError($data)
+    {
+        if($data->statut != 100){
+            throw new \Exception($data->message, $data->statut);
+        }
+
+    }
+
+    /**
+     * @param $response
+     * @throws \Exception
+     */
+    private function VerifyIfResponseIsNot($response)
+    {
+        if(is_null($response)){
+            throw new \Exception("TimeOut Exception", 400);
+        }
+    }
+
+    /**
+     * @param $response
+     * @return mixed
+     */
+    private function decodeResponse($response)
+    {
+        return \GuzzleHttp\json_decode($response->getBody()->getContents()) ;
     }
 
 
