@@ -90,6 +90,61 @@ class Eumm
 
     }
 
+    /**
+     * @param $phone
+     * @param $amount
+     * @return CashIn
+     * @throws \Exception
+     */
+    public function cashIn($phone, $amount)
+    {
+        $response = $this->getResponse('cashIn', [
+            'amount' => $amount,
+            'phone' => $phone,
+            'hash' => md5($this->id.$this->pwd.$amount.$phone.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            $this->returnError($data);
+            if($data->statut == 100){
+               return new CashIn($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+
+    /**
+     * @param string $sender_phone
+     * @param string $phone
+     * @param int $amount
+     * @return CashIn
+     * @throws \Exception
+     */
+    public function sendMoney($sender_phone, $phone, $amount)
+    {
+        $response = $this->getResponse('sendMoney', [
+            'amount' => $amount,
+            'phone' => $phone,
+            'sender_phone' => $sender_phone,
+            'hash' => md5($this->id.$this->pwd.$amount.$phone.$sender_phone.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            $this->returnError($data);
+            if($data->statut == 100){
+                return new CashIn($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+
+    }
+
+
     private function getResponse($pathUrl, $data)
     {
         $authData = [
@@ -132,7 +187,7 @@ class Eumm
     }
 
     /**
-     * @param $statut
+     * @param $data
      * @throws \Exception
      */
     private function returnError($data)
