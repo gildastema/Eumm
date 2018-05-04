@@ -71,6 +71,7 @@ class Eumm
       return $this->balance;
     }
 
+
     /**
      * @return mixed
      */
