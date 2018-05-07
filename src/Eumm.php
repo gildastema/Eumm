@@ -21,15 +21,31 @@ class Eumm
     private $statut;
     private $message;
     private $balance;
-    public function __construct($id, $key, $pwd)
+
+    /**
+     * Eumm constructor.
+     * @param $id
+     * @param $key
+     * @param $pwd
+     * @param null $ip
+     */
+    public function __construct($id, $key, $pwd, $ip=null)
     {
         $this->id = $id;
         $this->key=$key;
         $this->pwd = $pwd;
-        $this->client = new Client([
-            'base_uri' => self::URL.self::SUFFIX,
-            'timeout' => 120.0
-        ]);
+        if(!is_null($ip)){
+            $this->client = new Client([
+                'base_uri' =>$ip.'/'.self::SUFFIX,
+                'timeout' => 120.0
+            ]);
+        }else{
+            $this->client = new Client([
+                'base_uri' => self::URL.self::SUFFIX,
+                'timeout' => 120.0
+            ]);
+        }
+
 
     }
 
