@@ -13,7 +13,7 @@ use GuzzleHttp\Client;
 class Eumm
 {
     const SUFFIX="eumobile_api/v2/";
-    const URL = "http://195.24.207.114:9000/";
+
     private $key;
     private $pwd;
     private $id;
@@ -27,24 +27,18 @@ class Eumm
      * @param $id
      * @param $key
      * @param $pwd
-     * @param null $ip
+     * @param  $ip
      */
-    public function __construct($id, $key, $pwd, $ip=null)
+    public function __construct($id, $key, $pwd, $ip)
     {
         $this->id = $id;
         $this->key=$key;
         $this->pwd = $pwd;
-        if(!is_null($ip)){
-            $this->client = new Client([
-                'base_uri' =>$ip.'/'.self::SUFFIX,
-                'timeout' => 120.0
-            ]);
-        }else{
-            $this->client = new Client([
-                'base_uri' => self::URL.self::SUFFIX,
-                'timeout' => 120.0
-            ]);
-        }
+
+        $this->client = new Client([
+            'base_uri' =>$ip.'/'.self::SUFFIX,
+            'timeout' => 120.0
+        ]);
 
 
     }
