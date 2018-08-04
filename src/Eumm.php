@@ -12,7 +12,7 @@ use GuzzleHttp\Client;
 
 class Eumm
 {
-    const SUFFIX="eumobile_api/v2/";
+    const SUFFIX="eumobile_api/v2.1/";
 
     private $key;
     private $pwd;
