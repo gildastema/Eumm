@@ -1,12 +1,29 @@
 # API EUMM (Express Union Mobile Money)
 ## Installation
-### Pour la version api 2.1 
+###  API 2.1 
 composer require avssarl/apieumm:"2.1.*"
-### pour la version api 2.0
+### API 2.0
 composer require avssarl/apieumm:"2.0.*"
 
-## Les Services Implémentés
+## Services
 
-[x] GetAccountBalance  
-[x] GetAccountDetails
+---
+    - [x] GetAccountBalance
+    - [x] GetAccontDetails
+    - [x] getCommissionBalance
+    - [x] cashIn
+    - [x] sendMoney
+    - [x] getTransactionDetails
+    - [x] getReferenceIdDetails
+    - [x] sendPaymentRequest
+    - [x] sendPaymentRequest
+    - [x] getPaymentStatus
+    - [] generateKey
+    
+## Getting Started
+
+include './vendor/autoload.php';
+
+$eum = new \Eumm\Eumm($id, $pwd, $key, $ip);
+
 
