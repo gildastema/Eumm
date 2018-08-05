@@ -180,7 +180,6 @@ class Eumm
         $this->VerifyIfResponseIsNot($response);
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
-            $this->returnError($data);
             if($data->statut == 100){
                 $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime,$data->reference_id);
                 return new ResponseTransaction($data->statut, $data->message, $transaction);
