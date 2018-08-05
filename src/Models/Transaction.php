@@ -17,6 +17,7 @@ class Transaction
     private $transaction;
     private $balance;
     private $date;
+    private $referenceId;
 
     /**
      * CashIn constructor.
@@ -28,7 +29,7 @@ class Transaction
      * @param $balance
      * @param $date
      */
-    public function __construct($phone, $message, $amount, $fee, $transaction, $balance, $date)
+    public function __construct($phone, $message, $amount, $fee, $transaction, $balance, $date, $referenceId)
     {
         $this->phone = $phone;
         $this->message = $message;
@@ -37,6 +38,7 @@ class Transaction
         $this->transaction = $transaction;
         $this->balance = $balance;
         $this->date = $date;
+        $this->referenceId = $referenceId;
     }
 
     /**
@@ -98,6 +100,14 @@ class Transaction
     public function __toString()
     {
         return $this->message;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getReferenceId()
+    {
+        return $this->referenceId;
     }
 
 

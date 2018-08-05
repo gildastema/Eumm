@@ -12,7 +12,7 @@ class ResponseBalance extends Response
 {
     private $balance;
 
-    public function __construct($status, $message, $balance)
+    public function __construct($status, $message, $balance = null)
     {
         parent::__construct($status, $message);
 
