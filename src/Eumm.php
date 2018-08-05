@@ -9,9 +9,13 @@ namespace Eumm;
 
 
 use Eumm\Models\Account;
+use Eumm\Models\Payment;
 use Eumm\Models\Transaction;
+use Eumm\Models\TransactionDetails;
+use Eumm\Response\Response;
 use Eumm\Response\ResponseAccount;
 use Eumm\Response\ResponseBalance;
+use Eumm\Response\ResponsePayment;
 use Eumm\Response\ResponseTransaction;
 use GuzzleHttp\Client;
 
@@ -186,8 +190,122 @@ class Eumm
         }
 
     }
-    
 
+    /**
+     * @param $transactionId
+     * @return ResponseTransaction
+     * @throws \Exception
+     */
+    public function getTransactionDetails($transactionId)
+    {
+        $response = $this->makeRequest('getTransactionDetails', [
+            'transaction' => $transactionId,
+            'hash' => md5($this->id.$this->pwd.$transactionId.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            if($data->statut == 100) {
+                $transactionDetails = new TransactionDetails($data->trans_id, $data->reference_id, $data->source, $data->destination, $data->amount,$data->fee,
+                    $data->tax, $data->date, $data->result_desc, $data->type);
+                return new ResponseTransaction($data->statut, null, $transactionDetails);
+            }else{
+                return new ResponseTransaction($data->statut, $data->message);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+    /**
+     * @param $referenceId
+     * @return ResponseTransaction
+     * @throws \Exception
+     */
+    public function getReferenceIdDetails($referenceId)
+    {
+        $response = $this->makeRequest('getReferenceIdDetails', [
+            'reference_id' => $referenceId,
+            'hash' => md5($this->id.$this->pwd.$referenceId.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            if($data->statut == 100) {
+                $transactionDetails = new TransactionDetails($data->trans_id, $data->reference_id, $data->source, $data->destination, $data->amount,$data->fee,
+                    $data->tax, $data->date, $data->result_desc, $data->type);
+                return new ResponseTransaction($data->statut, null, $transactionDetails);
+            }else{
+                return new ResponseTransaction($data->statut, $data->message);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+    /**
+     * @param $billno
+     * @param $amount
+     * @param $date
+     * @param $duedate
+     * @param $name
+     * @param $phone
+     * @param $custId
+     * @param $label
+     * @param string $currency
+     * @return ResponsePayment
+     * @throws \Exception
+     */
+    public function sendPaymentRequest($billno, $amount, $date,$duedate,$name,$phone,$custId, $label, $currency = "XAF")
+    {
+        $response = $this->makeRequest('sendPaymentRequest', [
+            'amount' => $amount,
+            'currency' => $currency,
+            'date'   => $date,
+            'duedate' => $duedate,
+            'name' => $name,
+            'phone' => $phone,
+            'custid' => $custId,
+            'label'  => $label,
+            'hash' => md5($this->id.$this->pwd.$billno.$amount.$currency.$date.$duedate.$name.$phone.$custId.$label.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            if($data->statut == 100){
+                $payment = new Payment($data->phone, $data->amount, $data->reference,$data->balance);
+                return new ResponsePayment($data->statut, $data->message, $payment);
+            }else{
+                return new ResponsePayment($data->statut, $data->message);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+    /**
+     * @param $billno
+     * @param $phone
+     * @return Response
+     * @throws \Exception
+     */
+    public function getPaymentStatus($billno, $phone)
+    {
+        $response = $this->makeRequest('sendPaymentRequest', [
+            'billno' => $billno,
+            'phone' => $phone,
+            'hash' => md5($this->id.$this->pwd.$billno.$phone.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            return new Response($data->statut, $data->message);
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
 
     private function makeRequest($pathUrl, $data)
     {
