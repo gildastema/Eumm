@@ -29,7 +29,7 @@ class Transaction
      * @param $balance
      * @param $date
      */
-    public function __construct($phone, $message, $amount, $fee, $transaction, $balance, $date, $referenceId)
+    public function __construct($phone, $message, $amount, $fee, $transaction, $balance, $date)
     {
         $this->phone = $phone;
         $this->message = $message;
@@ -38,7 +38,6 @@ class Transaction
         $this->transaction = $transaction;
         $this->balance = $balance;
         $this->date = $date;
-        $this->referenceId = $referenceId;
     }
 
     /**

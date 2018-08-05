@@ -21,7 +21,7 @@ use GuzzleHttp\Client;
 
 class Eumm
 {
-    const SUFFIX="eumobile_api/v2.1/";
+    const SUFFIX="eumobile_api/v2/";
 
     private $key;
     private $pwd;
@@ -132,24 +132,22 @@ class Eumm
     /**
      * @param $phone
      * @param $amount
-     * @param $referenceId
      * @return ResponseTransaction
      * @throws \Exception
      */
-    public function cashIn($phone, $amount, $referenceId)
+    public function cashIn($phone, $amount)
     {
         $response = $this->makeRequest('cashIn', [
             'amount' => $amount,
             'phone' => $phone,
-            'reference_id' => $referenceId,
-            'hash' => md5($this->id.$this->pwd.$amount.$phone.$referenceId.$this->key)
+            'hash' => md5($this->id.$this->pwd.$amount.$phone.$this->key)
         ]);
         $this->VerifyIfResponseIsNot($response);
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
 
             if($data->statut == 100){
-               $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime,$data->reference_id);
+               $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
                return new ResponseTransaction($data->statut, $data->message, $transaction);
             }else{
                 return new ResponseTransaction($data->statut,$data->message);
@@ -180,7 +178,6 @@ class Eumm
         $this->VerifyIfResponseIsNot($response);
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
-            $this->returnError($data);
             if($data->statut == 100){
                 $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime,$data->reference_id);
                 return new ResponseTransaction($data->statut, $data->message, $transaction);
