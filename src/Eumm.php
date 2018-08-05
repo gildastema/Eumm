@@ -8,19 +8,25 @@
 namespace Eumm;
 
 
+use Eumm\Models\Account;
+use Eumm\Models\Payment;
+use Eumm\Models\Transaction;
+use Eumm\Models\TransactionDetails;
+use Eumm\Response\Response;
+use Eumm\Response\ResponseAccount;
+use Eumm\Response\ResponseBalance;
+use Eumm\Response\ResponsePayment;
+use Eumm\Response\ResponseTransaction;
 use GuzzleHttp\Client;
 
 class Eumm
 {
-    const SUFFIX="eumobile_api/v2/";
+    const SUFFIX="eumobile_api/v2.1/";
 
     private $key;
     private $pwd;
     private $id;
     private $client;
-    private $statut;
-    private $message;
-    private $balance;
 
     /**
      * Eumm constructor.
@@ -43,44 +49,40 @@ class Eumm
 
     }
 
+
     /**
-     * Get Balance for the account
-     * @return mixed
+     * @return ResponseBalance|null
      * @throws \Exception
      */
     public function getAccountBalance()
     {
-       $response= $this->getResponse("getAccountBalance",
+       $resp= $this->makeRequest("getAccountBalance",
                 [
                     'hash' => md5($this->id.$this->pwd.$this->key)
                 ]
            );
-       $this->VerifyIfResponseIsNot($response);
-        if($response->getStatusCode() === 200){
-          $data = $this->decodeResponse($response);
-          $this->returnError($data);
-           if ($data->statut == 100){
-                $this->statut = $data->statut;
-                $this->message = $data->message;
-                $this->balance = $data->balance;
-          }
 
+       $this->VerifyIfResponseIsNot($resp);
+        if($resp->getStatusCode() === 200){
+          $data = $this->decodeResponse($resp);
+          if($data->statut === 100) return new ResponseBalance($data->statut, $data->message, $data->balance);
+          else return new ResponseBalance($data->statut, $data->message);
       }else{
           throw new \Exception("Error",500);
+
       }
 
-      return $this->balance;
     }
 
     /**
      * Get Account Details
      * @param string $phone (237 XXXXXXXXX) E.169 format number
-     * @return Account
+     * @return ResponseAccount
      * @throws \Exception
      */
     public function getAccountDetails($phone)
     {
-        $response = $this->getResponse("getAccountDetails", [
+        $response = $this->makeRequest("getAccountDetails", [
             'account' => $phone,
             'hash' => md5($this->id.$this->pwd.$phone.$this->key)
         ]);
@@ -88,9 +90,12 @@ class Eumm
 
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
-            $this->returnError($data);
+
             if($data->statut == 100){
-                return new Account($data->phone, $data->accountName, $data->accountStatus, $data->accountPlan);
+                $account = new Account($data->phone, $data->accountName, $data->accountStatus, $data->accountPlan);
+                return new ResponseAccount($data->statut, "Transaction Successful", $account);
+            }else{
+                return new ResponseAccount($data->statut, $data->message);
             }
 
         }else{
@@ -98,27 +103,56 @@ class Eumm
         }
 
 
+    }
+
+    /**
+     * @return ResponseBalance
+     * @throws \Exception
+     */
+    public function getCommissionBalance()
+    {
+        $resp= $this->makeRequest("getCommissionBalance",
+            [
+                'hash' => md5($this->id.$this->pwd.$this->key)
+            ]
+        );
+
+        $this->VerifyIfResponseIsNot($resp);
+        if($resp->getStatusCode() === 200){
+            $data = $this->decodeResponse($resp);
+            if($data->statut === 100) return new ResponseBalance($data->statut, $data->message, $data->balance);
+            else return new ResponseBalance($data->statut, $data->message);
+
+        }else{
+            throw new \Exception("Error",500);
+
+        }
     }
 
     /**
      * @param $phone
      * @param $amount
-     * @return CashIn
+     * @param $referenceId
+     * @return ResponseTransaction
      * @throws \Exception
      */
-    public function cashIn($phone, $amount)
+    public function cashIn($phone, $amount, $referenceId)
     {
-        $response = $this->getResponse('cashIn', [
+        $response = $this->makeRequest('cashIn', [
             'amount' => $amount,
             'phone' => $phone,
-            'hash' => md5($this->id.$this->pwd.$amount.$phone.$this->key)
+            'reference_id' => $referenceId,
+            'hash' => md5($this->id.$this->pwd.$amount.$phone.$referenceId.$this->key)
         ]);
         $this->VerifyIfResponseIsNot($response);
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
-            $this->returnError($data);
+
             if($data->statut == 100){
-               return new CashIn($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
+               $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime,$data->reference_id);
+               return new ResponseTransaction($data->statut, $data->message, $transaction);
+            }else{
+                return new ResponseTransaction($data->statut,$data->message);
             }
         }else{
             throw new \Exception("Error",500);
@@ -127,17 +161,19 @@ class Eumm
 
 
     /**
-     * @param string $sender_phone
-     * @param string $phone
-     * @param int $amount
-     * @return CashIn
+     * @param $sender_phone
+     * @param $phone
+     * @param $amount
+     * @param $referenceId
+     * @return ResponseTransaction
      * @throws \Exception
      */
-    public function sendMoney($sender_phone, $phone, $amount)
+    public function sendMoney($sender_phone, $phone, $amount, $referenceId)
     {
-        $response = $this->getResponse('sendMoney', [
+        $response = $this->makeRequest('sendMoney', [
             'amount' => $amount,
             'phone' => $phone,
+            'reference_id' => $referenceId,
             'sender_phone' => $sender_phone,
             'hash' => md5($this->id.$this->pwd.$amount.$phone.$sender_phone.$this->key)
         ]);
@@ -146,16 +182,132 @@ class Eumm
             $data = $this->decodeResponse($response);
             $this->returnError($data);
             if($data->statut == 100){
-                return new CashIn($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
-            }
+                $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime,$data->reference_id);
+                return new ResponseTransaction($data->statut, $data->message, $transaction);
+            }else return new ResponseTransaction($data->statut, $data->message);
         }else{
             throw new \Exception("Error",500);
         }
 
     }
 
+    /**
+     * @param $transactionId
+     * @return ResponseTransaction
+     * @throws \Exception
+     */
+    public function getTransactionDetails($transactionId)
+    {
+        $response = $this->makeRequest('getTransactionDetails', [
+            'transaction' => $transactionId,
+            'hash' => md5($this->id.$this->pwd.$transactionId.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
 
-    private function getResponse($pathUrl, $data)
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            if($data->statut == 100) {
+                $transactionDetails = new TransactionDetails($data->trans_id, $data->reference_id, $data->source, $data->destination, $data->amount,$data->fee,
+                    $data->tax, $data->date, $data->result_desc, $data->type);
+                return new ResponseTransaction($data->statut, null, $transactionDetails);
+            }else{
+                return new ResponseTransaction($data->statut, $data->message);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+    /**
+     * @param $referenceId
+     * @return ResponseTransaction
+     * @throws \Exception
+     */
+    public function getReferenceIdDetails($referenceId)
+    {
+        $response = $this->makeRequest('getReferenceIdDetails', [
+            'reference_id' => $referenceId,
+            'hash' => md5($this->id.$this->pwd.$referenceId.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            if($data->statut == 100) {
+                $transactionDetails = new TransactionDetails($data->trans_id, $data->reference_id, $data->source, $data->destination, $data->amount,$data->fee,
+                    $data->tax, $data->date, $data->result_desc, $data->type);
+                return new ResponseTransaction($data->statut, null, $transactionDetails);
+            }else{
+                return new ResponseTransaction($data->statut, $data->message);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+    /**
+     * @param $billno
+     * @param $amount
+     * @param $date
+     * @param $duedate
+     * @param $name
+     * @param $phone
+     * @param $custId
+     * @param $label
+     * @param string $currency
+     * @return ResponsePayment
+     * @throws \Exception
+     */
+    public function sendPaymentRequest($billno, $amount, $date,$duedate,$name,$phone,$custId, $label, $currency = "XAF")
+    {
+        $response = $this->makeRequest('sendPaymentRequest', [
+            'amount' => $amount,
+            'currency' => $currency,
+            'date'   => $date,
+            'duedate' => $duedate,
+            'name' => $name,
+            'phone' => $phone,
+            'custid' => $custId,
+            'label'  => $label,
+            'hash' => md5($this->id.$this->pwd.$billno.$amount.$currency.$date.$duedate.$name.$phone.$custId.$label.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            if($data->statut == 100){
+                $payment = new Payment($data->phone, $data->amount, $data->reference,$data->balance);
+                return new ResponsePayment($data->statut, $data->message, $payment);
+            }else{
+                return new ResponsePayment($data->statut, $data->message);
+            }
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+    /**
+     * @param $billno
+     * @param $phone
+     * @return Response
+     * @throws \Exception
+     */
+    public function getPaymentStatus($billno, $phone)
+    {
+        $response = $this->makeRequest('sendPaymentRequest', [
+            'billno' => $billno,
+            'phone' => $phone,
+            'hash' => md5($this->id.$this->pwd.$billno.$phone.$this->key)
+        ]);
+        $this->VerifyIfResponseIsNot($response);
+        if($response->getStatusCode() == 200){
+            $data = $this->decodeResponse($response);
+            return new Response($data->statut, $data->message);
+        }else{
+            throw new \Exception("Error",500);
+        }
+    }
+
+    private function makeRequest($pathUrl, $data)
     {
         $authData = [
             'id' => $this->id,
@@ -171,43 +323,7 @@ class Eumm
     {
         return $this->key;
     }
-
-    /**
-     * @return mixed
-     */
-    public function getStatut()
-    {
-        return $this->statut;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getMessage()
-    {
-        return $this->message;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getBalance()
-    {
-        return $this->balance;
-    }
-
-    /**
-     * @param $data
-     * @throws \Exception
-     */
-    private function returnError($data)
-    {
-        if($data->statut != 100){
-            throw new \Exception($data->message, $data->statut);
-        }
-
-    }
-
+    
     /**
      * @param $response
      * @throws \Exception
