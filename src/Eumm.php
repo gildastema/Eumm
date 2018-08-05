@@ -186,6 +186,7 @@ class Eumm
         }
 
     }
+    
 
 
     private function makeRequest($pathUrl, $data)
@@ -204,19 +205,7 @@ class Eumm
     {
         return $this->key;
     }
-
-    /**
-     * @param $data
-     * @throws \Exception
-     */
-    private function returnError($data)
-    {
-        if($data->statut != 100){
-            throw new \Exception($data->message, $data->statut);
-        }
-
-    }
-
+    
     /**
      * @param $response
      * @throws \Exception
