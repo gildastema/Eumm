@@ -105,29 +105,6 @@ class Eumm
 
     }
 
-    /**
-     * @return ResponseBalance
-     * @throws \Exception
-     */
-    public function getCommissionBalance()
-    {
-        $resp= $this->makeRequest("getCommissionBalance",
-            [
-                'hash' => md5($this->id.$this->pwd.$this->key)
-            ]
-        );
-
-        $this->VerifyIfResponseIsNot($resp);
-        if($resp->getStatusCode() === 200){
-            $data = $this->decodeResponse($resp);
-            if($data->statut === 100) return new ResponseBalance($data->statut, $data->message, $data->balance);
-            else return new ResponseBalance($data->statut, $data->message);
-
-        }else{
-            throw new \Exception("Error",500);
-
-        }
-    }
 
     /**
      * @param $phone
@@ -179,7 +156,7 @@ class Eumm
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
             if($data->statut == 100){
-                $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime,$data->reference_id);
+                $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
                 return new ResponseTransaction($data->statut, $data->message, $transaction);
             }else return new ResponseTransaction($data->statut, $data->message);
         }else{
@@ -215,32 +192,7 @@ class Eumm
         }
     }
 
-    /**
-     * @param $referenceId
-     * @return ResponseTransaction
-     * @throws \Exception
-     */
-    public function getReferenceIdDetails($referenceId)
-    {
-        $response = $this->makeRequest('getReferenceIdDetails', [
-            'reference_id' => $referenceId,
-            'hash' => md5($this->id.$this->pwd.$referenceId.$this->key)
-        ]);
-        $this->VerifyIfResponseIsNot($response);
-
-        if($response->getStatusCode() == 200){
-            $data = $this->decodeResponse($response);
-            if($data->statut == 100) {
-                $transactionDetails = new TransactionDetails($data->trans_id, $data->reference_id, $data->source, $data->destination, $data->amount,$data->fee,
-                    $data->tax, $data->date, $data->result_desc, $data->type);
-                return new ResponseTransaction($data->statut, null, $transactionDetails);
-            }else{
-                return new ResponseTransaction($data->statut, $data->message);
-            }
-        }else{
-            throw new \Exception("Error",500);
-        }
-    }
+    
 
     /**
      * @param $billno
