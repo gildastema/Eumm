@@ -8,6 +8,11 @@
 namespace Eumm;
 
 
+use Eumm\Models\Account;
+use Eumm\Models\Transaction;
+use Eumm\Response\ResponseAccount;
+use Eumm\Response\ResponseBalance;
+use Eumm\Response\ResponseTransaction;
 use GuzzleHttp\Client;
 
 class Eumm
@@ -43,44 +48,40 @@ class Eumm
 
     }
 
+
     /**
-     * Get Balance for the account
-     * @return mixed
+     * @return ResponseBalance|null
      * @throws \Exception
      */
     public function getAccountBalance()
     {
-       $response= $this->getResponse("getAccountBalance",
+       $resp= $this->makeRequest("getAccountBalance",
                 [
                     'hash' => md5($this->id.$this->pwd.$this->key)
                 ]
            );
-       $this->VerifyIfResponseIsNot($response);
-        if($response->getStatusCode() === 200){
-          $data = $this->decodeResponse($response);
-          $this->returnError($data);
-           if ($data->statut == 100){
-                $this->statut = $data->statut;
-                $this->message = $data->message;
-                $this->balance = $data->balance;
-          }
+
+       $this->VerifyIfResponseIsNot($resp);
+        if($resp->getStatusCode() === 200){
+          $data = $this->decodeResponse($resp);
+          return new ResponseBalance($data->statut, $data->message, $data->balance);
 
       }else{
           throw new \Exception("Error",500);
+
       }
 
-      return $this->balance;
     }
 
     /**
      * Get Account Details
      * @param string $phone (237 XXXXXXXXX) E.169 format number
-     * @return Account
+     * @return ResponseAccount
      * @throws \Exception
      */
     public function getAccountDetails($phone)
     {
-        $response = $this->getResponse("getAccountDetails", [
+        $response = $this->makeRequest("getAccountDetails", [
             'account' => $phone,
             'hash' => md5($this->id.$this->pwd.$phone.$this->key)
         ]);
@@ -88,9 +89,12 @@ class Eumm
 
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
-            $this->returnError($data);
+
             if($data->statut == 100){
-                return new Account($data->phone, $data->accountName, $data->accountStatus, $data->accountPlan);
+                $account = new Account($data->phone, $data->accountName, $data->accountStatus, $data->accountPlan);
+                return new ResponseAccount($data->statut, "Transaction Successful", $account);
+            }else{
+                return new ResponseAccount($data->statut, $data->message);
             }
 
         }else{
@@ -103,12 +107,12 @@ class Eumm
     /**
      * @param $phone
      * @param $amount
-     * @return CashIn
+     * @return ResponseTransaction
      * @throws \Exception
      */
     public function cashIn($phone, $amount)
     {
-        $response = $this->getResponse('cashIn', [
+        $response = $this->makeRequest('cashIn', [
             'amount' => $amount,
             'phone' => $phone,
             'hash' => md5($this->id.$this->pwd.$amount.$phone.$this->key)
@@ -116,9 +120,12 @@ class Eumm
         $this->VerifyIfResponseIsNot($response);
         if($response->getStatusCode() == 200){
             $data = $this->decodeResponse($response);
-            $this->returnError($data);
+
             if($data->statut == 100){
-               return new CashIn($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
+               $transaction = new Transaction($data->phone, $data->message, $data->amount,$data->fees, $data->transaction,$data->balance,$data->datetime);
+               return new ResponseTransaction($data->statut, $data->message, $transaction);
+            }else{
+                return new ResponseTransaction($data->statut,$data->message);
             }
         }else{
             throw new \Exception("Error",500);
@@ -155,7 +162,7 @@ class Eumm
     }
 
 
-    private function getResponse($pathUrl, $data)
+    private function makeRequest($pathUrl, $data)
     {
         $authData = [
             'id' => $this->id,

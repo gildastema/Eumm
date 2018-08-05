@@ -5,7 +5,7 @@
  * Time: 1:57 PM
  */
 
-namespace Eumm;
+namespace Eumm\Models;
 
 
 class Account

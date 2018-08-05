@@ -5,10 +5,10 @@
  * Time: 3:12 PM
  */
 
-namespace Eumm;
+namespace Eumm\Models;
 
 
-class CashIn
+class Transaction
 {
     private $phone;
     private $message;
