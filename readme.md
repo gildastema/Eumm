@@ -18,7 +18,7 @@ composer require avssarl/apieumm:"2.0.*"
     - [x] sendPaymentRequest
     - [x] sendPaymentRequest
     - [x] getPaymentStatus
-    - [] generateKey
+    - [] getKey
     
 ## Getting Started
 
