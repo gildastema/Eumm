@@ -24,6 +24,9 @@ composer require avssarl/apieumm:"2.0.*"
 
 include './vendor/autoload.php';
 
-$eum = new \Eumm\Eumm($id, $pwd, $key, $ip);
+<code>
+ $eum = new \Eumm\Eumm($id, $pwd, $key, $ip);
+
 print $eum->getAccountBalance()->getBalance();
 
+</code>
